@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaksi Harian MAP</title>
+  <style>
+    :root {
+      --bg-page: #eef2f5;
+      --surface: #ffffff;
+      --surface-subtle: #f6f8fa;
+      --border-soft: #d5dde4;
+      --border-grid: #c8d2dc;
+      --header-bg: #e2e9f0;
+      --header-text: #1f2d3d;
+      --accent: #3b6998;
+      --accent-hover: #2f557d;
+      --accent-dark: #1f2d3d;
+      --accent-soft: #eaf1f8;
+      --text-main: #1f2933;
+      --text-muted: #52606d;
+      --row-alt: #f8fafc;
+      --note-bg: #fdf3f2;
+      --note-border: #e8b4b0;
+      --note-text: #9e2a2b;
+      --success: #2b7a5b;
+      --shadow-card: 0 8px 24px rgba(31, 45, 61, 0.06);
+      --shadow-sm: 0 2px 8px rgba(31, 45, 61, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #e7edf2 0%, var(--bg-page) 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 14px 12px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sheet-card {
+      width: 100%;
+      max-width: 640px;
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 16px 14px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .main-title {
+      font-size: clamp(16px, 4.2vw, 20px);
+      font-weight: 800;
+      color: var(--accent-dark);
+      text-align: center;
+      padding: 4px 8px 12px;
+      margin-bottom: 12px;
+      border-bottom: 1.5px solid var(--border-soft);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .main-title::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* Tata letak AKUN dan Tanggal dipertahankan seperti awal, warna disesuaikan */
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .field label {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    select, input[type="date"] {
+      width: 100%;
+      padding: 7px 8px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--accent-dark);
+      background: var(--surface-subtle);
+      border: 1px solid #b8c6d4;
+      border-radius: 4px;
+    }
+
+    select:focus, input[type="date"]:focus {
+      outline: 2px solid var(--accent);
+      background: #ffffff;
+    }
+
+    /* Catatan modern bernuansa merah lembut */
+    .note-box {
+      position: relative;
+      background-color: var(--note-bg);
+      border: 1px solid var(--note-border);
+      border-left: 4px solid var(--note-text);
+      color: var(--note-text);
+      border-radius: 10px;
+      padding: 10px 32px 10px 12px;
+      margin-top: 10px;
+      margin-bottom: 12px;
+      font-size: 11.5px;
+      line-height: 1.5;
+      text-align: justify;
+    }
+
+    .note-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      text-align: left;
+      letter-spacing: 0.2px;
+    }
+
+    .note-item {
+      position: relative;
+      padding-left: 16px;
+      margin-top: 3px;
+    }
+
+    .note-num {
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-weight: 700;
+    }
+
+    .note-close {
+      position: absolute;
+      top: 7px;
+      right: 8px;
+      background: rgba(158, 42, 43, 0.08);
+      border: none;
+      border-radius: 6px;
+      color: var(--note-text);
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1;
+      padding: 3px 7px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .note-close:hover {
+      background: rgba(158, 42, 43, 0.16);
+    }
+
+    .sheet-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: linear-gradient(135deg, #243447 0%, #324a63 100%);
+      color: #ffffff;
+      padding: 9px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 10px 10px 0 0;
+      letter-spacing: 0.2px;
+    }
+
+    .grid-wrap {
+      width: 100%;
+      overflow-x: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      pointer-events: none;
+      border: 1px solid var(--border-grid);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      background: #ffffff;
+    }
+
+    th, td {
+      border: 1px solid var(--border-grid);
+      padding: 8px 9px;
+      line-height: 1.25;
+    }
+
+    th {
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) {
+      background: var(--row-alt);
+    }
+
+    .c-no {
+      width: 42px;
+      text-align: center;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .c-nama {
+      text-align: left;
+      font-weight: 500;
+    }
+
+    .c-do {
+      width: 62px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th.c-rt {
+      text-align: center;
+    }
+
+    .c-rt {
+      width: 68px;
+      text-align: right;
+      font-weight: 700;
+      color: var(--accent-dark);
+      font-variant-numeric: tabular-nums;
+    }
+
+    tfoot td {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-weight: 800;
+      border-top: 2px solid #9fb3c8;
+    }
+
+    .msg-cell {
+      text-align: center;
+      padding: 24px 12px;
+      color: var(--text-muted);
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+
+    /* Kartu Link Google Spreadsheet */
+    .link-card {
+      width: 100%;
+      max-width: 640px;
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 13px 14px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .link-card label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .link-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .link-row input {
+      flex: 1;
+      min-width: 0;
+      padding: 9px 11px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface-subtle);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+    }
+
+    .btn-copy {
+      padding: 9px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-copy:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-copy:active {
+      transform: scale(0.98);
+    }
+
+    .copy-feedback {
+      font-size: 11.5px;
+      color: var(--success);
+      font-weight: 700;
+      display: none;
+    }
+
+    /* Tombol Unduh Sebagai Gambar */
+    .download-wrap {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .btn-download {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      background: linear-gradient(135deg, #243447 0%, #3b6998 100%);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(36, 52, 71, 0.18);
+      letter-spacing: 0.2px;
+      transition: filter 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-download:hover {
+      filter: brightness(1.05);
+    }
+
+    .btn-download:active {
+      transform: scale(0.99);
+    }
+
+    .download-warn {
+      font-size: 11.5px;
+      color: var(--note-text);
+      font-weight: 700;
+      text-align: center;
+      display: none;
+    }
+
+    /* Popup Notifikasi Animasi Centang */
+    .toast-popup {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-16px);
+      background: #1f2d3d;
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.24);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .toast-popup.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .check-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .check-svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .check-path {
+      stroke-dasharray: 24;
+      stroke-dashoffset: 24;
+    }
+
+    .toast-popup.show .check-path {
+      animation: drawCheck 0.45s ease forwards 0.1s;
+    }
+
+    @keyframes drawCheck {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 10px 8px 22px;
+      }
+      .sheet-card {
+        padding: 12px 10px;
+        border-radius: 12px;
+      }
+      th, td {
+        padding: 7px 6px;
+        font-size: 12px;
+      }
+      .btn-copy {
+        padding: 9px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Popup Notifikasi Selesai Muat Data -->
+  <div class="toast-popup" id="toastPopup" role="status" aria-live="polite">
+    <span class="check-circle">
+      <svg class="check-svg" viewBox="0 0 24 24">
+        <path class="check-path" d="M5 13l4 4L19 7"></path>
+      </svg>
+    </span>
+    <span>Proses Memuat Data Selesai</span>
+  </div>
+
+  <!-- Kartu Utama Tabel -->
+  <div class="sheet-card">
+    <div class="main-title">Transaksi Harian MAP</div>
+
+    <div class="toolbar">
+      <div class="field">
+        <label for="akunSelect">AKUN</label>
+        <select id="akunSelect" disabled>
+          <option value="">Pilih akun disini</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tglInput">Tanggal (<span id="bulanLabel">-</span>)</label>
+        <input type="date" id="tglInput" disabled>
+      </div>
+    </div>
+
+    <!-- Catatan merah -->
+    <div class="note-box" id="noteBox">
+      <button type="button" class="note-close" id="closeNoteBtn" title="Tutup catatan">&times;</button>
+      <div class="note-title">Catatan :</div>
+      <div class="note-item"><span class="note-num">1.</span>Pilih akun untuk menampilkan nama pangkalan dan transaksi harian.</div>
+      <div class="note-item"><span class="note-num">2.</span>Kolom DO adalah jumlah penjualan / transaksi harian tiap-tiap pangkalan.</div>
+      <div class="note-item"><span class="note-num">3.</span>Pada kolom paling kanan (setelah kolom DO) adalah kolom dengan judul kolom yang berisi tanggal dan diikuti dibawahnya adalah jumlah transaksi untuk Jenis Pelanggan Rumah Tangga yang sisanya untuk transaksi ke Jenis Pelanggan Usaha Mikro.</div>
+      <div class="note-item"><span class="note-num">4.</span>Hilangkan catatan ini dengan klik icon (x) di sudut pojok atas.</div>
+    </div>
+
+    <div class="sheet-bar">
+      <span id="barAkun">AKUN: -</span>
+      <span id="barTanggal">-</span>
+    </div>
+
+    <div class="grid-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="c-no">NO</th>
+            <th class="c-nama">NAMA PANGKALAN</th>
+            <th class="c-do">DO</th>
+            <th class="c-rt" id="thTanggal">TGL</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyData">
+          <tr>
+            <td colspan="4" class="msg-cell">Memuat data spreadsheet...</td>
+          </tr>
+        </tbody>
+        <tfoot id="tfootData" style="display: none;">
+          <tr>
+            <td colspan="2" style="text-align: center;">TOTAL</td>
+            <td class="c-do" id="sumDo">0</td>
+            <td class="c-rt" id="sumRt">0</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Kartu Link Google Spreadsheet -->
+  <div class="link-card">
+    <label for="sheetLinkInput">Link Google Spreadsheet</label>
+    <div class="link-row">
+      <input type="text" id="sheetLinkInput" disabled value="https://docs.google.com/spreadsheets/d/12Z9U23sgN-OlPcLgIX4Ns7YvDjkNpU2gdSHl1C9hGl0/edit?usp=sharing">
+      <button type="button" class="btn-copy" id="copyBtn">Salin</button>
+    </div>
+    <div class="copy-feedback" id="copyFeedback">✓ Link berhasil disalin!</div>
+  </div>
+
+  <!-- Tombol Unduh Sebagai Gambar -->
+  <div class="download-wrap">
+    <button type="button" class="btn-download" id="downloadImgBtn">Unduh Sebagai Gambar</button>
+    <div class="download-warn" id="downloadWarn">Pilih AKUN terlebih dahulu sebelum mengunduh gambar tabel.</div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbybbSqUNftvavr0NRdO5CAZj9fn0GXdUj8ryUhzy63S5qZO2N_qsKg03Ngafr6E8PAd/exec";
+
+    const BULAN_INDO = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    const akunSelect = document.getElementById("akunSelect");
+    const tglInput = document.getElementById("tglInput");
+    const bulanLabel = document.getElementById("bulanLabel");
+    const noteBox = document.getElementById("noteBox");
+    const closeNoteBtn = document.getElementById("closeNoteBtn");
+    const barAkun = document.getElementById("barAkun");
+    const barTanggal = document.getElementById("barTanggal");
+    const thTanggal = document.getElementById("thTanggal");
+    const tbodyData = document.getElementById("tbodyData");
+    const tfootData = document.getElementById("tfootData");
+    const sumDoEl = document.getElementById("sumDo");
+    const sumRtEl = document.getElementById("sumRt");
+    const sheetLinkInput = document.getElementById("sheetLinkInput");
+    const copyBtn = document.getElementById("copyBtn");
+    const copyFeedback = document.getElementById("copyFeedback");
+    const downloadImgBtn = document.getElementById("downloadImgBtn");
+    const downloadWarn = document.getElementById("downloadWarn");
+    const toastPopup = document.getElementById("toastPopup");
+
+    let rowsData = [];
+    let currentPreviewState = null;
+    let toastTimer = null;
+
+    function showLoadedToast() {
+      toastPopup.classList.remove("show");
+      void toastPopup.offsetWidth;
+      toastPopup.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastPopup.classList.remove("show");
+      }, 2500);
+    }
+
+    closeNoteBtn.addEventListener("click", () => {
+      noteBox.style.display = "none";
+    });
+
+    async function loadData() {
+      try {
+        const resp = await fetch(API_URL);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const data = await resp.json();
+        setupUI(data);
+        showLoadedToast();
+      } catch (err) {
+        tbodyData.innerHTML = `<tr><td colspan="4" class="msg-cell">Gagal mengambil data: ${err.message}</td></tr>`;
+      }
+    }
+
+    function setupUI(data) {
+      rowsData = (data.rows || []).filter(r => (r.akun || "").trim().toUpperCase() !== "OFF");
+
+      const sortedAkunList = (data.akunList || [])
+        .filter(akun => akun && akun.trim().toUpperCase() !== "OFF")
+        .sort((a, b) => a.localeCompare(b, "id", { sensitivity: "base" }));
+
+      akunSelect.innerHTML = `<option value="">Pilih akun disini</option>`;
+      sortedAkunList.forEach(akun => {
+        const opt = document.createElement("option");
+        opt.value = akun;
+        opt.textContent = akun;
+        akunSelect.appendChild(opt);
+      });
+      akunSelect.value = "";
+      akunSelect.disabled = false;
+
+      const year = data.year;
+      const month = data.month;
+      const mm = String(month + 1).padStart(2, "0");
+      const lastDay = new Date(year, month + 1, 0).getDate();
+
+      const minDate = `${year}-${mm}-01`;
+      const maxDate = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
+
+      tglInput.min = minDate;
+      tglInput.max = maxDate;
+
+      const now = new Date();
+      if (now.getFullYear() === year && now.getMonth() === month) {
+        tglInput.value = `${year}-${mm}-${String(now.getDate()).padStart(2, "0")}`;
+      } else {
+        tglInput.value = minDate;
+      }
+
+      tglInput.disabled = false;
+      bulanLabel.textContent = data.sheetName || BULAN_INDO[month];
+
+      akunSelect.addEventListener("change", () => {
+        downloadWarn.style.display = "none";
+        renderPreview();
+      });
+      tglInput.addEventListener("change", renderPreview);
+
+      renderPreview();
+    }
+
+    function renderPreview() {
+      const akun = akunSelect.value;
+      const valTgl = tglInput.value;
+      if (!valTgl) return;
+
+      const [yStr, mStr, dStr] = valTgl.split("-");
+      const year = parseInt(yStr, 10);
+      const monthIdx = parseInt(mStr, 10) - 1;
+      const day = parseInt(dStr, 10);
+      const formattedDateText = `${day} ${BULAN_INDO[monthIdx]} ${year}`;
+
+      thTanggal.textContent = String(day);
+      barAkun.textContent = akun ? `AKUN: ${akun}` : "AKUN: -";
+      barTanggal.textContent = formattedDateText;
+
+      if (!akun) {
+        currentPreviewState = null;
+        tbodyData.innerHTML = `<tr><td colspan="4" class="msg-cell">Silakan pilih AKUN terlebih dahulu.</td></tr>`;
+        tfootData.style.display = "none";
+        return;
+      }
+
+      const filtered = rowsData.filter(r => r.akun === akun);
+      if (filtered.length === 0) {
+        currentPreviewState = null;
+        tbodyData.innerHTML = `<tr><td colspan="4" class="msg-cell">Tidak ada data untuk akun ${akun}</td></tr>`;
+        tfootData.style.display = "none";
+        return;
+      }
+
+      let totalDo = 0;
+      let totalRt = 0;
+      let html = "";
+      const tableRows = [];
+
+      filtered.forEach((row, idx) => {
+        const doNum = parseFloat((row.doVal || "0").toString().replace(/,/g, "")) || 0;
+        const rtRaw = (row.rt && row.rt[day] !== undefined) ? row.rt[day] : "";
+        const rtNum = parseFloat(rtRaw.toString().replace(/,/g, "")) || 0;
+
+        totalDo += doNum;
+        totalRt += rtNum;
+
+        const noText = String(idx + 1);
+        const rtText = String(rtRaw);
+
+        tableRows.push({
+          no: noText,
+          nama: row.nama,
+          doVal: String(row.doVal),
+          rt: rtText
+        });
+
+        html += `
+          <tr>
+            <td class="c-no">${noText}</td>
+            <td class="c-nama">${row.nama}</td>
+            <td class="c-do">${row.doVal}</td>
+            <td class="c-rt">${rtText}</td>
+          </tr>
+        `;
+      });
+
+      tbodyData.innerHTML = html;
+      sumDoEl.textContent = totalDo;
+      sumRtEl.textContent = totalRt;
+      tfootData.style.display = "table-footer-group";
+
+      currentPreviewState = {
+        akun: akun,
+        day: day,
+        formattedDate: formattedDateText,
+        rows: tableRows,
+        totalDo: String(totalDo),
+        totalRt: String(totalRt)
+      };
+    }
+
+    function downloadTableAsJpg720x1500() {
+      if (!currentPreviewState || currentPreviewState.rows.length === 0) {
+        downloadWarn.style.display = "block";
+        return;
+      }
+      downloadWarn.style.display = "none";
+
+      const CANVAS_W = 720;
+      const CANVAS_H = 1500;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = CANVAS_W;
+      canvas.height = CANVAS_H;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+      // Posisi tabel pas dengan lebar 720px dan tinggi 1500px untuk layar HP
+      const tableWidth = 664;
+      const startX = Math.floor((CANVAS_W - tableWidth) / 2);
+      const startY = 56;
+
+      const wNo = 56;
+      const wDo = 96;
+      const wRt = 104;
+      const wNama = tableWidth - wNo - wDo - wRt;
+
+      const xNo = startX;
+      const xNama = xNo + wNo;
+      const xDo = xNama + wNama;
+      const xRt = xDo + wDo;
+
+      const bannerH = 44;
+      const headerH = 40;
+      const rowH = 36;
+      const footerH = 42;
+      const gridColor = "#c8d2dc";
+
+      let curY = startY;
+
+      ctx.fillStyle = "#243447";
+      ctx.fillRect(startX, curY, tableWidth, bannerH);
+      ctx.strokeStyle = "#243447";
+      ctx.lineWidth = 1.4;
+      ctx.strokeRect(startX, curY, tableWidth, bannerH);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 15px Arial, Helvetica, sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "left";
+      ctx.fillText(`AKUN: ${currentPreviewState.akun}`, startX + 12, curY + bannerH / 2);
+
+      ctx.textAlign = "right";
+      ctx.fillText(currentPreviewState.formattedDate, startX + tableWidth - 12, curY + bannerH / 2);
+
+      curY += bannerH;
+
+      ctx.fillStyle = "#e2e9f0";
+      ctx.fillRect(startX, curY, tableWidth, headerH);
+      ctx.strokeStyle = gridColor;
+      ctx.lineWidth = 1.1;
+
+      const headers = [
+        { text: "NO", x: xNo, w: wNo, align: "center" },
+        { text: "NAMA PANGKALAN", x: xNama, w: wNama, align: "left" },
+        { text: "DO", x: xDo, w: wDo, align: "center" },
+        { text: String(currentPreviewState.day), x: xRt, w: wRt, align: "center" }
+      ];
+
+      ctx.fillStyle = "#1f2d3d";
+      ctx.font = "bold 14px Arial, Helvetica, sans-serif";
+      headers.forEach(h => {
+        ctx.strokeRect(h.x, curY, h.w, headerH);
+        if (h.align === "center") {
+          ctx.textAlign = "center";
+          ctx.fillText(h.text, h.x + h.w / 2, curY + headerH / 2);
+        } else {
+          ctx.textAlign = "left";
+          ctx.fillText(h.text, h.x + 10, curY + headerH / 2);
+        }
+      });
+
+      curY += headerH;
+
+      currentPreviewState.rows.forEach((r, i) => {
+        ctx.fillStyle = i % 2 === 1 ? "#f8fafc" : "#ffffff";
+        ctx.fillRect(startX, curY, tableWidth, rowH);
+
+        ctx.strokeStyle = gridColor;
+        ctx.strokeRect(xNo, curY, wNo, rowH);
+        ctx.strokeRect(xNama, curY, wNama, rowH);
+        ctx.strokeRect(xDo, curY, wDo, rowH);
+        ctx.strokeRect(xRt, curY, wRt, rowH);
+
+        ctx.fillStyle = "#1f2933";
+        ctx.font = "14px Arial, Helvetica, sans-serif";
+
+        ctx.textAlign = "center";
+        ctx.fillText(r.no, xNo + wNo / 2, curY + rowH / 2);
+
+        ctx.textAlign = "left";
+        ctx.fillText(r.nama, xNama + 10, curY + rowH / 2);
+
+        ctx.textAlign = "center";
+        ctx.fillText(r.doVal, xDo + wDo / 2, curY + rowH / 2);
+
+        ctx.font = "bold 14px Arial, Helvetica, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(r.rt, xRt + wRt - 10, curY + rowH / 2);
+
+        curY += rowH;
+      });
+
+      ctx.fillStyle = "#eaf1f8";
+      ctx.fillRect(startX, curY, tableWidth, footerH);
+      ctx.strokeStyle = "#9fb3c8";
+      ctx.lineWidth = 1.4;
+
+      const totalLabelW = wNo + wNama;
+      ctx.strokeRect(startX, curY, totalLabelW, footerH);
+      ctx.strokeRect(xDo, curY, wDo, footerH);
+      ctx.strokeRect(xRt, curY, wRt, footerH);
+
+      ctx.fillStyle = "#1f2d3d";
+      ctx.font = "bold 14px Arial, Helvetica, sans-serif";
+
+      ctx.textAlign = "center";
+      ctx.fillText("TOTAL", startX + totalLabelW / 2, curY + footerH / 2);
+      ctx.fillText(currentPreviewState.totalDo, xDo + wDo / 2, curY + footerH / 2);
+
+      ctx.textAlign = "right";
+      ctx.fillText(currentPreviewState.totalRt, xRt + wRt - 10, curY + footerH / 2);
+
+      const jpgUrl = canvas.toDataURL("image/jpeg", 0.95);
+      const link = document.createElement("a");
+      const safeAkun = currentPreviewState.akun.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const safeDate = currentPreviewState.formattedDate.replace(/\s+/g, "_");
+      link.download = `Tabel_${safeAkun}_${safeDate}.jpg`;
+      link.href = jpgUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    downloadImgBtn.addEventListener("click", downloadTableAsJpg720x1500);
+
+    copyBtn.addEventListener("click", async () => {
+      const textToCopy = sheetLinkInput.value;
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+      } catch (e) {
+        const temp = document.createElement("textarea");
+        temp.value = textToCopy;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        document.body.removeChild(temp);
+      }
+      copyFeedback.style.display = "block";
+      setTimeout(() => {
+        copyFeedback.style.display = "none";
+      }, 2000);
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
